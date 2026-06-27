@@ -19,8 +19,9 @@ def iniciar_sesion(email, password):
             st.session_state.usuario = perfil.data[0]['nombre']
             st.session_state.rol = perfil.data[0]['rol']
             st.session_state.user_id = user_id
-            st.rerun() # Recarga la app para aplicar la sesión
-except Exception as e:
+            st.rerun() 
+    except Exception as e:
+        # Aquí pusimos el error detallado para saber qué falla en la conexión
         st.error(f"Error detallado: {e}")
 
 def cerrar_sesion():
