@@ -1,48 +1,16 @@
 import streamlit as st
-from supabase import create_client, Client
+from auth import iniciar_sesion, cerrar_sesion
+from motor_ia import generar_mision_gemini
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# Configuración de página
 st.set_page_config(page_title="Misiones de Física", page_icon="🚀", layout="centered")
 
-# --- CONEXIÓN A SUPABASE ---
-@st.cache_resource
-def init_connection():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
-
-supabase: Client = init_connection()
-
-# --- INICIALIZACIÓN DE SESIÓN ---
+# Inicialización de estado de sesión
 if 'usuario' not in st.session_state:
     st.session_state.usuario = None
-if 'rol' not in st.session_state:
     st.session_state.rol = None
+    st.session_state.user_id = None
 
-# --- FUNCIONES DE AUTENTICACIÓN ---
-def iniciar_sesion(email, password):
-    try:
-        # Autenticar con Supabase
-        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        user_id = response.user.id
-        
-        # Consultar el rol en la tabla perfiles
-        perfil = supabase.table("perfiles").select("rol, nombre").eq("id", user_id).execute()
-        
-        if perfil.data:
-            st.session_state.usuario = perfil.data[0]['nombre']
-            st.session_state.rol = perfil.data[0]['rol']
-            st.rerun() # Recarga la app con la nueva sesión
-    except Exception as e:
-        st.error("Credenciales incorrectas o error de conexión.")
-
-def cerrar_sesion():
-    supabase.auth.sign_out()
-    st.session_state.usuario = None
-    st.session_state.rol = None
-    st.rerun()
-
-# --- VISTAS (RUTAS) ---
 def vista_login():
     st.title("Bienvenido a Misiones de Física 🤿🚢")
     st.write("Ingresa tus credenciales para comenzar.")
@@ -57,19 +25,36 @@ def vista_login():
 
 def vista_estudiante():
     st.success(f"¡Hola, {st.session_state.usuario}! Misión lista para comenzar.")
-    # Aquí irá la lógica de las 5 preguntas y Gemini
-    st.write("Generando entorno de simulación...")
+    
+    # Menú desplegable para que el estudiante elija (o podemos hacerlo aleatorio luego)
+    tema = st.selectbox("Selecciona tu misión de hoy:", [
+        "Presión Hidrostática", 
+        "Principio de Arquímedes", 
+        "Presión Básica de Fluidos",
+        "Densidad y Flotabilidad"
+    ])
+    
+    # Botón para detonar el motor de IA
+    if st.button("Solicitar Misión a la IA"):
+        with st.spinner("Conectando con el comando central y calculando variables..."):
+            preguntas = generar_mision_gemini(tema)
+            if preguntas:
+                st.write("### Datos recibidos de Gemini:")
+                st.json(preguntas) # Renderiza el JSON crudo temporalmente para validar que la estructura es perfecta
+    
+    st.divider()
     if st.button("Cerrar Sesión"):
         cerrar_sesion()
 
 def vista_admin():
     st.info(f"Panel de Control - Administrador ({st.session_state.usuario})")
-    # Aquí irá el dashboard de analíticas
-    st.write("Métricas de rendimiento de estudiantes.")
+    st.write("Métricas de rendimiento de estudiantes en construcción.")
+    
+    st.divider()
     if st.button("Cerrar Sesión"):
         cerrar_sesion()
 
-# --- ENRUTADOR PRINCIPAL ---
+# Enrutador principal
 if st.session_state.usuario is None:
     vista_login()
 else:
