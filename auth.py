@@ -20,8 +20,8 @@ def iniciar_sesion(email, password):
             st.session_state.rol = perfil.data[0]['rol']
             st.session_state.user_id = user_id
             st.rerun() # Recarga la app para aplicar la sesión
-    except Exception as e:
-        st.error("Credenciales incorrectas o error de conexión.")
+except Exception as e:
+        st.error(f"Error detallado: {e}")
 
 def cerrar_sesion():
     supabase = obtener_cliente_supabase()
