@@ -7,10 +7,10 @@ genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 def generar_mision_gemini(tema_elegido):
     """
-    Genera 5 preguntas de física estructuradas en JSON usando Gemini 1.5 Flash.
+    Genera 5 preguntas de física estructuradas en JSON usando Gemini 2.5 Flash.
     """
     model = genai.GenerativeModel(
-        'gemini-1.5-flash', 
+        'gemini-2.5-flash', 
         generation_config={"response_mime_type": "application/json"}
     )
     
