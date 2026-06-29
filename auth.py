@@ -2,32 +2,25 @@ import streamlit as st
 from supabase import create_client, Client
 
 @st.cache_resource
-def obtener_cliente_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
+def get_supabase() -> Client:
+    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 def iniciar_sesion(email, password):
-    supabase = obtener_cliente_supabase()
     try:
+        supabase = get_supabase()
         response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        user_id = response.user.id
-        
-        perfil = supabase.table("perfiles").select("rol, nombre").eq("id", user_id).execute()
+        perfil = supabase.table("perfiles").select("rol, nombre").eq("id", response.user.id).execute()
         
         if perfil.data:
             st.session_state.usuario = perfil.data[0]['nombre']
             st.session_state.rol = perfil.data[0]['rol']
-            st.session_state.user_id = user_id
-            st.rerun() 
+            st.session_state.user_id = response.user.id
+            st.rerun()
+        else:
+            st.warning("Usuario autenticado, pero sin registro en tabla 'perfiles'.")
     except Exception as e:
-        # Aquí pusimos el error detallado para saber qué falla en la conexión
-        st.error(f"Error detallado: {e}")
+        st.error(f"Credenciales incorrectas. (Error interno: {e})")
 
 def cerrar_sesion():
-    supabase = obtener_cliente_supabase()
-    supabase.auth.sign_out()
-    st.session_state.usuario = None
-    st.session_state.rol = None
-    st.session_state.user_id = None
+    st.session_state.clear()
     st.rerun()
