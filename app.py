@@ -1,64 +1,44 @@
 import streamlit as st
 from auth import iniciar_sesion, cerrar_sesion
-from motor_ia import generar_mision_gemini
+from dashboard import mostrar_dashboard
+from misiones import ejecutar_mision
 
-# Configuración de página
-st.set_page_config(page_title="Misiones de Física", page_icon="🚀", layout="centered")
+# Configuración obligatoria al inicio
+st.set_page_config(page_title="Misiones Física", page_icon="🌊", layout="centered", initial_sidebar_state="collapsed")
 
-# Inicialización de estado de sesión
-if 'usuario' not in st.session_state:
-    st.session_state.usuario = None
-    st.session_state.rol = None
-    st.session_state.user_id = None
+# Inyección del CSS personalizado
+def cargar_css():
+    try:
+        with open("style.css") as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass # Ignora si el archivo no se encuentra temporalmente
 
-def vista_login():
-    st.title("Bienvenido a Misiones de Física 🤿🚢")
-    st.write("Ingresa tus credenciales para comenzar.")
-    
-    with st.form("login_form"):
-        email = st.text_input("Correo electrónico")
-        password = st.text_input("Contraseña", type="password")
-        submit = st.form_submit_button("Iniciar Misión")
-        
-        if submit:
-            iniciar_sesion(email, password)
+cargar_css()
 
-def vista_estudiante():
-    st.success(f"¡Hola, {st.session_state.usuario}! Misión lista para comenzar.")
-    
-    # Menú desplegable para que el estudiante elija (o podemos hacerlo aleatorio luego)
-    tema = st.selectbox("Selecciona tu misión de hoy:", [
-        "Presión Hidrostática", 
-        "Principio de Arquímedes", 
-        "Presión Básica de Fluidos",
-        "Densidad y Flotabilidad"
-    ])
-    
-    # Botón para detonar el motor de IA
-    if st.button("Solicitar Misión a la IA"):
-        with st.spinner("Conectando con el comando central y calculando variables..."):
-            preguntas = generar_mision_gemini(tema)
-            if preguntas:
-                st.write("### Datos recibidos de Gemini:")
-                st.json(preguntas) # Renderiza el JSON crudo temporalmente para validar que la estructura es perfecta
-    
+# Control de estado inicial
+if 'pagina' not in st.session_state: st.session_state.pagina = "dashboard"
+if 'usuario' not in st.session_state: st.session_state.usuario = None
+
+# Menú lateral colapsable (Hamburguesa en móvil)
+with st.sidebar:
+    st.title("Navegación 🧭")
+    if st.button("🏠 Cuartel General"): st.session_state.pagina = "dashboard"
+    if st.button("🚀 Inmersión (Jugar)"): st.session_state.pagina = "misiones"
     st.divider()
-    if st.button("Cerrar Sesión"):
-        cerrar_sesion()
+    if st.button("🚪 Abandonar Nave"): cerrar_sesion()
 
-def vista_admin():
-    st.info(f"Panel de Control - Administrador ({st.session_state.usuario})")
-    st.write("Métricas de rendimiento de estudiantes en construcción.")
-    
-    st.divider()
-    if st.button("Cerrar Sesión"):
-        cerrar_sesion()
-
-# Enrutador principal
+# Enrutador
 if st.session_state.usuario is None:
-    vista_login()
+    st.title("Misiones de Física 🤿")
+    st.write("Identificación requerida para abordar.")
+    email = st.text_input("Correo de Cadete")
+    pwd = st.text_input("Código de Acceso", type="password")
+    if st.button("Iniciar Misión"):
+        iniciar_sesion(email, pwd)
 else:
-    if st.session_state.rol == 'admin':
-        vista_admin()
-    elif st.session_state.rol == 'estudiante':
-        vista_estudiante()
+    pagina = st.session_state.get("pagina", "dashboard")
+    if pagina == "dashboard":
+        mostrar_dashboard()
+    elif pagina == "misiones":
+        ejecutar_mision()
